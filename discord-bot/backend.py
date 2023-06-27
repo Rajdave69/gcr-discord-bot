@@ -41,6 +41,7 @@ log = colorlogger()
 
 try:
     discord_token: str = config.get('secret', 'discord_token')
+    google_credentials: dict = eval(config.get('secret', 'google_credentials'))
     mysql_host = config.get('secret', 'mysql_host')
     mysql_port = config.getint('secret', 'mysql_port')
     mysql_user = config.get('secret', 'mysql_user')
@@ -138,3 +139,35 @@ def error_template(description: str) -> discord.Embed:
 
     return _error_template.copy()
 
+
+async def get_creds(user_id: int):
+    log.debug("get creds")
+
+    # check for creds in data.db
+    pool = await aiomysql.create_pool(
+        host=mysql_host, port=mysql_port, user=mysql_user, password=mysql_password, db=mysql_database)
+
+    async with pool.acquire() as db:
+        async with db.cursor() as cursor:
+            await cursor.execute('SELECT * FROM credentials WHERE user_id = %s;', (user_id,))
+            row = await cursor.fetchone()
+            log.debug(row)
+            if row is not None:
+                creds = Credentials.from_authorized_user_info(eval(row[1]), SCOPES)
+                if creds.expired and creds.refresh_token:
+                    creds.refresh(Request())
+                return creds
+            else:
+                return None
+
+
+async def connect_gcr(user_id):
+    print("E")
+    flow = InstalledAppFlow.from_client_config(google_credentials, SCOPES,
+                                               redirect_uri='http://127.0.0.1:8000/')
+
+    auth_url, state = flow.authorization_url(prompt='consent')
+
+    pool = await aiomysql.create_pool(
+        host='three.nodes.rajtech.me', port=3306, user='u134_GMK0k1OJIP', password='zPow0bEq!NYMXwSSOM==tMfd', db='s134_data'
+    )
