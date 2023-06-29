@@ -12,7 +12,6 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-import os.path
 
 # Loading config.ini
 config = configparser.ConfigParser()
@@ -171,3 +170,29 @@ async def connect_gcr(user_id):
     pool = await aiomysql.create_pool(
         host='three.nodes.rajtech.me', port=3306, user='u134_GMK0k1OJIP', password='zPow0bEq!NYMXwSSOM==tMfd', db='s134_data'
     )
+
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute("INSERT INTO cache (cache_key, data1, data2) VALUES (%s, %s, %s)", ('pending_auth_code', user_id, state))
+            await conn.commit()
+
+    return auth_url
+
+async def get_class_list(user_id):
+    # Get their creds from the db
+    creds: Credentials | None = await get_creds(user_id)
+    if creds is None:
+        raise Exception
+
+    service = build('classroom', 'v1', credentials=creds)
+
+    results = service.courses().list(pageSize=10).execute()
+
+    courses = results.get('courses', [])
+
+    print(courses)
+
+    if not courses:
+        return None
+    else:
+        return courses
