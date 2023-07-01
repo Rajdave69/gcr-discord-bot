@@ -1,6 +1,31 @@
+import sys
+
 import aiomysql
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.oauth2.credentials import Credentials
+import configparser
+
+
+# read ./data/config.ini
+config = configparser.ConfigParser()
+config.read('./data/config.ini')
+
+# Get variables from config.ini
+
+try:
+    google_credentials: dict = eval(config.get('secret', 'google_credentials'))
+    mysql_host = config.get('secret', 'mysql_host')
+    mysql_port = config.getint('secret', 'mysql_port')
+    mysql_user = config.get('secret', 'mysql_user')
+    mysql_password = config.get('secret', 'mysql_password')
+    mysql_database = config.get('secret', 'mysql_database')
+
+    # log_level: str = config.get('main', 'log_level')
+
+
+except Exception as err:
+    print("Error reading the config.ini file. Error: " + str(err))
+    sys.exit()
 
 
 
@@ -16,8 +41,8 @@ async def args_handler(args) -> str:
 
 
 
-    flow = InstalledAppFlow.from_client_secrets_file(
-        './data/credentials.json', args.get('scope'), redirect_uri='http://127.0.0.1:8000/')
+    flow = InstalledAppFlow.from_client_config(
+        google_credentials, args.get('scope'), redirect_uri='http://127.0.0.1:8000/')
 
     flow.fetch_token(code=args.get('code'))
     creds = flow.credentials
