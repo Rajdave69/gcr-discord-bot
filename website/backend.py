@@ -51,7 +51,7 @@ async def args_handler(args) -> str:
     await add_used_state(args.get('state'))
 
     pool = await aiomysql.create_pool(
-        host='three.nodes.rajtech.me', port=3306, user='u134_GMK0k1OJIP', password='zPow0bEq!NYMXwSSOM==tMfd', db='s134_data')
+        host=mysql_host, port=mysql_port, user=mysql_user, password=mysql_password, db=mysql_database)
 
     async with pool.acquire() as conn:
         async with conn.cursor() as cur:
@@ -77,7 +77,7 @@ async def args_handler(args) -> str:
 
 async def get_used_states() -> list[str]:
     pool = await aiomysql.create_pool(
-        host='three.nodes.rajtech.me', port=3306, user='u134_GMK0k1OJIP', password='zPow0bEq!NYMXwSSOM==tMfd', db='s134_data')
+        host=mysql_host, port=mysql_port, user=mysql_user, password=mysql_password, db=mysql_database)
 
     async with pool.acquire() as conn:
         async with conn.cursor() as cur:
@@ -87,11 +87,24 @@ async def get_used_states() -> list[str]:
 
 async def add_used_state(state: str):
     pool = await aiomysql.create_pool(
-        host='three.nodes.rajtech.me', port=3306, user='u134_GMK0k1OJIP', password='zPow0bEq!NYMXwSSOM==tMfd',
-        db='s134_data')
+        host=mysql_host, port=mysql_port, user=mysql_user, password=mysql_password, db=mysql_database)
 
     async with pool.acquire() as conn:
         async with conn.cursor() as cur:
             await cur.execute("INSERT IGNORE INTO cache (cache_key, data1) VALUES ('used_state', %s);", (state,))
+            await conn.commit()
+
+async def add_response(state: str, response: str):
+    """
+    Everytime a connection is successful/unsuccessful, the response is added to the DB's `responses` table.
+    This is used by the Discord Bot to update the user on the status of their connection.
+    """
+
+    pool = await aiomysql.create_pool(
+        host=mysql_host, port=mysql_port, user=mysql_user, password=mysql_password, db=mysql_database)
+
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute("INSERT INTO cache (cache_key, data1, data2) VALUES (%s, %s, %s);", ("connection_response", state, response))
             await conn.commit()
 
