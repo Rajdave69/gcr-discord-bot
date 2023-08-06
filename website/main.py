@@ -10,7 +10,12 @@ used_states = []
 async def index():
 
     res = await args_handler(flask.request.args)
-    # res - no_args, error, invalid_args, success, unauthorized_discord_user
+    # res - no_args, error, invalid_args, success, unauthorized_discord_user+
+
+    if res == "success":
+        await add_response(flask.request.args.get('state'), "success")
+    elif res == "error":
+        await add_response(flask.request.args.get('state'), "error")
 
 
 
@@ -19,3 +24,5 @@ async def index():
 
 
 
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=8000)
